@@ -6,11 +6,6 @@
       "id": 1
     },
     {
-      "content": "테스트 2",
-      "completed": false,
-      "id": 2
-    },
-    {
       "content": "테스트 3",
       "completed": true,
       "id": 3
