@@ -35,7 +35,9 @@
     document.addEventListener('keydown', (event) => {
       if (!/Arrow/gi.test(event.key)) return
       event.preventDefault()
+
       const direction = getDirection(event.key)
+      // direction이 정확하지 않은 경우 (역방향은 불가 -> 예외처리)
       if (!isDirectionCorrect(direction)) return
       option.direction = direction
     })
@@ -86,6 +88,15 @@
     for (let i=option.snake.length-1; i>=0; --i) {
       buildSnake(ctx, option.snake[i].x, option.snake[i].y, i===0) 
       // 마지막에 i=0이 되면 head=true -> 머리 그리기
+    }
+  }
+
+  const setHighScore = () => {
+    const localScore = option.highScore * 1 || 0
+    const finalScore = $score.textContent.match(/(\d+)/)[0] * 1
+    if (localScore < finalScore) {
+      alert(`최고기록 : ${finalScore}점`)
+      localStorage.setItem('score', finalScore)
     }
   }
 
@@ -149,10 +160,82 @@
   }
 
 
+  const playSnake = () => {
+    let x = option.snake[0].x
+    let y = option.snake[0].y
+    // 방향 전환에 따른 setDirection
+    switch (option.direction) {
+      case 1: // down
+        y = setDirection(300, y+10)
+        break
+      case -1: //up
+        y = setDirection(300, y-10)
+        break
+      case -2: // left
+        x = setDirection(300, x-10)
+        break
+      case 2: // right
+        x = setDirection(300, x+10)
+        break
+    }
+    // 방향 전환 후 성장한 snake 몸통 그리기
+    const snake = [{ x, y, direction: option.direction }]
+    const snakeLength = option.snake.length
+    for (let i=1; i<snakeLength; ++i) {
+      snake.push({ ...option.snake[i-1] })
+    }
+    option.snake = snake
+  }
+
+
+  const getDirection = (key) => {
+    let direction = 0;
+    switch (key) {
+      case 'ArrowDown' :
+        direction = 1
+        break
+      case 'ArrowUp' :
+        direction = -1
+        break
+      case 'ArrowLeft' :
+        direction = -2
+        break
+      case 'ArrowRight' :
+        direction = 2
+        break
+    }
+    return direction
+  }
+
+  const isDirectionCorrect = (direction) => {
+    return (
+      // 방향이 일치하면서 반대 방향이 아닌지
+      option.direction === option.snake[0].direction && 
+      option.direction !== -direction
+    )
+  }
+
+
+  const isGameOver = () => {
+    // head가 지렁이 몸 중 어느것에든지 닿으면 game over
+    const head = option.snake[0]
+    return option.snake.some (
+      (body, index) => index !== 0 && head.x === body.x && head.y === body.y
+    )
+  }
+
+
   const play = (timestamp) => {
     start++
     if (option.gameEnd) return
     if (timestamp - start > 1000 / 10) {
+      if (isGameOver()) {
+        option.gameEnd = true
+        setHighScore()
+        alert('게임오버')
+        return
+      }
+      playSnake()
       buildBoard()
       buildFood(ctx, option.food.x, option.food.y)
       setSnake()
@@ -160,12 +243,6 @@
       start = timestamp
     }
     window.requestAnimationFrame(play)
-    // if (isGameOver()) {
-    //   option.gameEnd = true
-    //   setHighScore()
-    //   alert('게임오버')
-    //   return
-    // }
   }
 
   init()
